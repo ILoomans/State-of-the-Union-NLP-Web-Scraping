@@ -85,7 +85,7 @@ word_freq_df = pd.DataFrame(X_train, columns=cv.get_feature_names())
 top_words_df = pd.DataFrame(word_freq_df.sum()).sort_values(0, ascending=False)
 
 naive_bayes = MultinomialNB() #setup Bayesian Model 
-naive_bayes.fit(X_train, y_train) #train the model with data
+naive_bayes.fit(X_train, y_train) #train theWe We  model with data
 predictions = naive_bayes.predict(X_test) #make predictions given test samples
 
 
@@ -118,34 +118,33 @@ for i in parameters:
     accuracy_outsample.append(accuracy_score(y_test, predictions))
 
 
+# Very innacurate predictor using Naive Bayes
 
 
 #############################
 #############################
-#Lasso
+#Lasso & Ridge Regression
     
-class Model: #define a class object which is similar to function but should a set of objects (functions) in python
+class Model:
     def __init__(self,model,name):
-        self.Model=model #define itsself property in the local environment
-        self.name=name #define itself name property in the local environment
+        self.Model=model
+        self.name=name
     
-    #include two functions in this class of objects
-    def mysummary(self): #first summary function
+    def mysummary(self):
         result=self.Model
         try:
-            coefs_=(((result.coef_).toarray())[0]).tolist() #try to obtain lasso coefficient 
+            coefs_=(((result.coef_).toarray())[0]).tolist()
         except AttributeError:
-            coefs_=((result.coef_)[0]).tolist() #when lasso result doesn't work then, try ridge regression coefficient
-        coefs_abs=[abs(t) for t in coefs_] #calculate the absolute values of the loadings (coefficients)
-        Coef=pd.DataFrame({'Term':name,'Coef':coefs_,'Abs':coefs_abs,}) #generate a table to show the term importance 
-        new=Coef.sort_values(by=['Coef'],ascending=False) #sort the dataframe based on absolute value
+            coefs_=((result.coef_)[0]).tolist()
+        coefs_abs=[abs(t) for t in coefs_]
+        Coef=pd.DataFrame({'Term':name,'Coef':coefs_,'Abs':coefs_abs,})
+        new=Coef.sort_values(by=['Coef'],ascending=False)
         print(new)
         self.new=new
         
-    def mygraph(self): #second self defined function in this class to draw the graph
-        new=self.new #new is the local attribute defined in the last function about the coefficient data frame
-        #Then, find the postive coefficents and negative coefficients and draw the graph with different colors
-        new['positive']=new.Coef>0 
+    def mygraph(self):
+        new=self.new
+        new['positive']=new.Coef>0
         new['Coef'].plot.bar(color=new.positive.map({True: 'b', False: 'r'}))
         plt.xticks(rotation=50)
         plt.xlabel("Terms")
@@ -153,42 +152,42 @@ class Model: #define a class object which is similar to function but should a se
         plt.show()
         
         
-cv = CountVectorizer(min_df=0.0001) #feature extraction function buildup
-result=cv.fit_transform(texts_new)  #transform the data into document-term matrix
-name=cv.get_feature_names() #feature name
+cv = CountVectorizer(min_df=0.0001)
+result=cv.fit_transform(texts_new)
+name=cv.get_feature_names()
 print(cv.get_feature_names()[1:100])
 print(result.shape)
-X=result.toarray() #prepare for the data in matrix
-y=np.array(data['Party'].tolist()) #prepare the y response.
+X=result.toarray()
+y=np.array(data['Party'].tolist())
 
     
-tfidf_id=1 #identifier whether you will select a tfidf vectorization or not
+tfidf_id=0
 if tfidf_id==1:
     cv=TfidfVectorizer(min_df=0.001)
 else:
-    cv = CountVectorizer(min_df=0.001) #feature space selection and optimize it with cross-validation
+    cv = CountVectorizer(min_df=0.001)
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_state=1)
-cs = np.arange(0.001,2,0.01) #tunning parameter of C set for cross-validation 
+cs = np.arange(0.001,2,0.01)
 
 
 clflasso = LogisticRegressionCV(Cs=cs,
-                           cv=5, #number of the cross validation
-                           solver='saga', #optimization solver
-                           random_state=0, #random state control
-                           n_jobs=-1, #whether we should implement all the CPU processors or not
-                           penalty='l1', #options on the penalization rules, the other two choices: l1 for lasso, l2 for ridge
+                           cv=5,
+                           solver='saga',
+                           random_state=0,
+                           n_jobs=-1,
+                           penalty='l1',
                            )
 
     
 
 clfridge = LogisticRegressionCV(Cs=cs,
-                           cv=5, #number of the cross validation
+                           cv=5,
                            solver='saga',
                            random_state=0,
-                           n_jobs=-1, #whether we should implement all the CPU processors or not
-                           penalty='l2', #options on the penalization rules, the other two choices:
+                           n_jobs=-1,
+                           penalty='l2'
                            )
 
 result_lasso=clflasso.fit(X_train, y_train)
@@ -203,7 +202,7 @@ print('Ridge regression for in-sample and out-of-sample cases:')
 print(accuracy_score(result_ridge.predict(X_train),y_train))
 print(accuracy_score(result_ridge.predict(X_test),y_test))
 
-x=Model(result_ridge,name)
+x=Model(result_lasso,name)
 x.mysummary()
 x.mygraph()
 
@@ -214,7 +213,7 @@ x.mygraph()
 from sklearn.neural_network import MLPClassifier
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_state=1)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,random_state=1)
 MLP = MLPClassifier()
 
 result_mlp = MLP.fit(X_train, y_train)
@@ -223,6 +222,7 @@ print(accuracy_score(result_mlp.predict(X_train),y_train))
 print(accuracy_score(result_mlp.predict(X_test),y_test))
 
 
+# lets add some hyperparameters
 
 
 #############################
@@ -250,82 +250,12 @@ print('Results on the test set:')
 print(classification_report(y_true, y_pred))
 
 
+3
 
 
 #############################
 #############################
-import gensim
 
-#Word Embedding in Skip-Gram
-SkipGram = gensim.models.Word2Vec(token_new,sg=1,
-                              min_count=3,  # Ignore words that appear less than this
-                              size=200,  # Dimensionality of word embeddings
-                              workers=3,  # Number of processors (parallelisation)
-                              window=5,  # Context window for words during train
-                              iter=30)
-
-
-result_skipgram=SkipGram.most_similar('regim')
-inflat_SkipGram=SkipGram.wv['regim']
-print('Skip-Gram vector for inflat token')
-print(inflat_SkipGram)
-print('+++++++++++++++++++++++++++++++++++++++')
-print('Skip-Gram top similar tokens:')
-print(result_skipgram)
-
-
-#CBOW model
-
-
-#Word Embedding in CBOW
-CBOW= gensim.models.Word2Vec(token_new,sg=0,
-                              min_count=3,  # Ignore words that appear less than this
-                              size=200,  # Dimensionality of word embeddings
-                              workers=3,  # Number of processors (parallelisation)
-                              window=5,  # Context window for words during train
-                              iter=30)
-
-
-result_CBOW=CBOW.most_similar('nixon')
-inflat_CBOW=CBOW.wv['nixon']
-print(inflat_CBOW)
-print('+++++++++++++++++++++++++++++++++++++++')
-print('CBOW top similar tokens:')
-print(result_CBOW)
-
-
-for x in token_new:
-  for t in x: 
-      if 'nixon' in t:
-          print(t)
-          
-
-
-# K-Means Clusterign 
-
-import nltk
-from nltk.cluster import KMeansClusterer
-def KM_Cluster(model,num):
-    #num: the number of the terms is showed up
-    #model: the model implemented in word_embedding
-    Num_of_Cluster=3
-    km=KMeansClusterer(Num_of_Cluster, distance=nltk.cluster.util.cosine_distance, repeats=25)
-    X=model[model.wv.vocab]
-    assign_clusters1=km.cluster(X,assign_clusters=True)
-    words = list(model.wv.vocab)[:num]
-    for i, word in enumerate(words):  
-        print (word + ":" + str(assign_clusters1[i]))
-        
-        
-        
-print('+++++++++++++++++++++++++++++++++++++++++++++++++++')
-print('CBOW Clustering Result:')
-KM_Cluster(CBOW,10)
-print('++++++++++++++++++++++++++++++++++++++++++++++++++++')
-print('SkipGram result')
-KM_Cluster(SkipGram,10)
-#############################
-#############################
 
 #Grid Search CV
 from sklearn.ensemble import RandomForestClassifier
@@ -334,14 +264,13 @@ from sklearn.ensemble import RandomForestClassifier
 rfc = RandomForestClassifier(n_jobs=-1,max_features= 'sqrt' ,n_estimators=10, oob_score = True) 
 
 param_grid = {
-#    'n_estimators': [200, 700],
+    'n_estimators': [200, 700],
     'max_features': ['auto', 'sqrt', 'log2']
 }
 
-CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
 
 
-CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv= 5)
+CV_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid)
 CV_rfc.fit(X, y)
 CV_rfc.best_params_
 
@@ -350,12 +279,95 @@ print(accuracy_score(CV_rfc.predict(X_train),y_train))
 print(accuracy_score(CV_rfc.predict(X_test),y_test))
 
 
+
 OSP = CV_rfc.predict(X_test)
 y_test
 
 #############################
 #############################
 
+from sklearn.naive_bayes import MultinomialNB
+
+clf = MultinomialNB()
+clf.fit(X, y)
+print(clf.get_params())
+print('Naive Bayes for in-sample and out-of-sample cases:')
+print(accuracy_score(clf.predict(X_train),y_train))
+print(accuracy_score(clf.predict(X_test),y_test))
+
+
+#############################
+#############################
+
+
+import gensim
+
+# Word Embedding in Skip-Gram
+SkipGram = gensim.models.Word2Vec(token_new, sg=1,
+                                  min_count=3,  # Ignore words that appear less than this
+                                  size=200,  # Dimensionality of word embeddings
+                                  workers=3,  # Number of processors (parallelisation)
+                                  window=5,  # Context window for words during train
+                                  iter=30)
+
+result_skipgram = SkipGram.most_similar('baghdadi')
+inflat_SkipGram = SkipGram.wv['baghdadi']
+print('Skip-Gram vector for inflat token')
+print(inflat_SkipGram)
+print('+++++++++++++++++++++++++++++++++++++++')
+print('Skip-Gram top similar tokens:')
+print(result_skipgram)
+
+# CBOW model
+
+
+# Word Embedding in CBOW
+CBOW = gensim.models.Word2Vec(token_new, sg=0,
+                              min_count=3,  # Ignore words that appear less than this
+                              size=200,  # Dimensionality of word embeddings
+                              workers=3,  # Number of processors (parallelisation)
+                              window=5,  # Context window for words during train
+                              iter=30)
+
+result_CBOW = CBOW.most_similar('climat')
+inflat_CBOW = CBOW.wv['climat']
+print(inflat_CBOW)
+print('+++++++++++++++++++++++++++++++++++++++')
+print('CBOW top similar tokens:')
+print(result_CBOW)
+
+# Search for tokens
+for x in token_new:
+    for t in x:
+        if 'nixon' in t:
+            print(t)
+
+# K-Means Clusterign
+
+import nltk
+from nltk.cluster import KMeansClusterer
+
+
+def KM_Cluster(model, num):
+    # num: the number of the terms is showed up
+    # model: the model implemented in word_embedding
+    Num_of_Cluster = 3
+    km = KMeansClusterer(Num_of_Cluster, distance=nltk.cluster.util.cosine_distance, repeats=25)
+    X = model[model.wv.vocab]
+    assign_clusters1 = km.cluster(X, assign_clusters=True)
+    words = list(model.wv.vocab)[:num]
+    for i, word in enumerate(words):
+        print(word + ":" + str(assign_clusters1[i]))
+
+
+print('+++++++++++++++++++++++++++++++++++++++++++++++++++')
+print('CBOW Clustering Result:')
+KM_Cluster(CBOW, 10)
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++')
+print('SkipGram result')
+KM_Cluster(SkipGram, 10)
+#############################
+#############################
 #############################
 #############################
 
