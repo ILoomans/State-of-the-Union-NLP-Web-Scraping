@@ -20,8 +20,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from sklearn.model_selection import cross_val_score
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
 import nltk
-nltk.download('punkt')
+
 
 data = pd.read_csv('sotu.csv')
 data
@@ -84,41 +86,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_s
 word_freq_df = pd.DataFrame(X_train, columns=cv.get_feature_names())
 top_words_df = pd.DataFrame(word_freq_df.sum()).sort_values(0, ascending=False)
 
-naive_bayes = MultinomialNB() #setup Bayesian Model 
-naive_bayes.fit(X_train, y_train) #train theWe We  model with data
-predictions = naive_bayes.predict(X_test) #make predictions given test samples
+
+clf = MultinomialNB()
+clf.fit(X, y)
+print(clf.get_params())
+print('Naive Bayes for in-sample and out-of-sample cases:')
+print(accuracy_score(clf.predict(X_train),y_train))
+print(accuracy_score(clf.predict(X_test),y_test))
 
 
-print('In Sample prediction accuracy++++++++++++++++++++++++++++++++++++++++++')
-print(accuracy_score(y_train, naive_bayes.predict(X_train))) #compare the prediction value with the true value in training sample
-
-print('Out of Sample prediction accuracy++++++++++++++++++++++++++++++++++++++')
-print(accuracy_score(y_test, predictions)) #compare the prediction with true value for out-of-sample
 
 
-parameters=list(np.arange(0.0001,0.02,0.0001))
-accuracy_insample=[]
-accuracy_outsample=[]
-cross_val=[]
-#loop the parameter grids of the model:
-for i in parameters:
-    #the tunning parameters in this algorithm is the document frequency
-    print(parameters.index(i))
-    cv = CountVectorizer(min_df=i) #feature space selection and optimize it with cross-validation
-    result=cv.fit_transform(texts_new)
-    name=cv.get_feature_names()
-    X=result.toarray()
-    y=np.array(data['Party'].tolist())
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_state=1)
-    naive_bayes = MultinomialNB()
-    naive_bayes.fit(X_train, y_train)
-    cross_val.append(cross_val_score(naive_bayes, X, y,scoring='accuracy', cv=10))
-    predictions = naive_bayes.predict(X_test)
-    accuracy_insample.append(accuracy_score(y_train, naive_bayes.predict(X_train)))
-    accuracy_outsample.append(accuracy_score(y_test, predictions))
 
-
-# Very innacurate predictor using Naive Bayes
 
 
 #############################
@@ -202,12 +181,236 @@ print('Ridge regression for in-sample and out-of-sample cases:')
 print(accuracy_score(result_ridge.predict(X_train),y_train))
 print(accuracy_score(result_ridge.predict(X_test),y_test))
 
+import matplotlib.pyplot as plt
+
+def plot_roc_curve(fpr, tpr):
+    plt.plot(fpr, tpr, color='orange', label='ROC')
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
+
+
+Ridge = clfridge.predict_proba(X_test)
+Ridge = Ridge[:, 1]
+
+auc = roc_auc_score(y_test, Ridge)
+print('AUC: %.2f' % auc)
+
+fpr, tpr, thresholds = roc_curve(y_test, Ridge)
+
+plot_roc_curve(fpr, tpr)
+
+
+
+
+
 x=Model(result_lasso,name)
 x.mysummary()
 x.mygraph()
 
 
 #############################
+class Model:
+    def __init__(self,model,name):
+        self.Model=model
+        self.name=name
+
+    def mysummary(self):
+        result=self.Model
+        try:
+            coefs_=(((result.coef_).toarray())[0]).tolist()
+        except AttributeError:
+            coefs_=((result.coef_)[0]).tolist()
+        coefs_abs=[abs(t) for t in coefs_]
+        Coef=pd.DataFrame({'Term':name,'Coef':coefs_,'Abs':coefs_abs,})
+        new=Coef.sort_values(by=['Coef'],ascending=False)
+        print(new)
+        self.new=new
+
+    def mygraph(self):
+        new=self.new
+        new['positive']=new.Coef>0
+        new['Coef'].plot.bar(color=new.positive.map({True: 'b', False: 'r'}))
+        plt.xticks(rotation=50)
+        plt.xlabel("Terms")
+        plt.ylabel("Term Loading in Absolute Values")
+        plt.show()
+
+
+cv = CountVectorizer(min_df=0.0001)
+result=cv.fit_transform(texts_new)
+name=cv.get_feature_names()
+print(cv.get_feature_names()[1:100])
+print(result.shape)
+X=result.toarray()
+y=np.array(data['Party'].tolist())
+
+
+tfidf_id=0
+if tfidf_id==1:
+    cv=TfidfVectorizer(min_df=0.001)
+else:
+    cv = CountVectorizer(min_df=0.001)
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_state=1)
+cs = np.arange(0.001,2,0.01)
+
+
+clflasso = LogisticRegressionCV(Cs=cs,
+                           cv=5,
+                           solver='saga',
+                           random_state=0,
+                           n_jobs=-1,
+                           penalty='l1',
+                           )
+
+
+
+clfridge = LogisticRegressionCV(Cs=cs,
+                           cv=5,
+                           solver='saga',
+                           random_state=0,
+                           n_jobs=-1,
+                           penalty='l2'
+                           )
+
+result_lasso=clflasso.fit(X_train, y_train)
+result_ridge=clfridge.fit(X_train, y_train)
+
+print('LASSO regression for in-sample and out-of-sample cases:')
+print(accuracy_score(result_lasso.predict(X_train),y_train))
+print(accuracy_score(result_lasso.predict(X_test),y_test))
+
+
+print('Ridge regression for in-sample and out-of-sample cases:')
+print(accuracy_score(result_ridge.predict(X_train),y_train))
+print(accuracy_score(result_ridge.predict(X_test),y_test))
+
+import matplotlib.pyplot as plt
+
+def plot_roc_curve(fpr, tpr):
+    plt.plot(fpr, tpr, color='orange', label='ROC')
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
+
+
+Ridge = clfridge.predict_proba(X_test)
+Ridge = Ridge[:, 1]
+
+auc = roc_auc_score(y_test, Ridge)
+print('AUC: %.2f' % auc)
+
+class Model:
+    def __init__(self,model,name):
+        self.Model=model
+        self.name=name
+
+    def mysummary(self):
+        result=self.Model
+        try:
+            coefs_=(((result.coef_).toarray())[0]).tolist()
+        except AttributeError:
+            coefs_=((result.coef_)[0]).tolist()
+        coefs_abs=[abs(t) for t in coefs_]
+        Coef=pd.DataFrame({'Term':name,'Coef':coefs_,'Abs':coefs_abs,})
+        new=Coef.sort_values(by=['Coef'],ascending=False)
+        print(new)
+        self.new=new
+
+    def mygraph(self):
+        new=self.new
+        new['positive']=new.Coef>0
+        new['Coef'].plot.bar(color=new.positive.map({True: 'b', False: 'r'}))
+        plt.xticks(rotation=50)
+        plt.xlabel("Terms")
+        plt.ylabel("Term Loading in Absolute Values")
+        plt.show()
+
+
+cv = CountVectorizer(min_df=0.0001)
+result=cv.fit_transform(texts_new)
+name=cv.get_feature_names()
+print(cv.get_feature_names()[1:100])
+print(result.shape)
+X=result.toarray()
+y=np.array(data['Party'].tolist())
+
+
+tfidf_id=0
+if tfidf_id==1:
+    cv=TfidfVectorizer(min_df=0.001)
+else:
+    cv = CountVectorizer(min_df=0.001)
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,random_state=1)
+cs = np.arange(0.001,2,0.01)
+
+
+clflasso = LogisticRegressionCV(Cs=cs,
+                           cv=5,
+                           solver='saga',
+                           random_state=0,
+                           n_jobs=-1,
+                           penalty='l1',
+                           )
+
+
+
+clfridge = LogisticRegressionCV(Cs=cs,
+                           cv=5,
+                           solver='saga',
+                           random_state=0,
+                           n_jobs=-1,
+                           penalty='l2'
+                           )
+
+result_lasso=clflasso.fit(X_train, y_train)
+result_ridge=clfridge.fit(X_train, y_train)
+
+print('LASSO regression for in-sample and out-of-sample cases:')
+print(accuracy_score(result_lasso.predict(X_train),y_train))
+print(accuracy_score(result_lasso.predict(X_test),y_test))
+
+
+print('Ridge regression for in-sample and out-of-sample cases:')
+print(accuracy_score(result_ridge.predict(X_train),y_train))
+print(accuracy_score(result_ridge.predict(X_test),y_test))
+
+import matplotlib.pyplot as plt
+
+def plot_roc_curve(fpr, tpr):
+    plt.plot(fpr, tpr, color='orange', label='ROC')
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
+
+
+Ridge = clfridge.predict_proba(X_test)
+Ridge = Ridge[:, 1]
+
+auc = roc_auc_score(y_test, Ridge)
+print('AUC: %.2f' % auc)
+
+fpr, tpr, thresholds = roc_curve(y_test, Ridge)
+
+plot_roc_curve(fpr, tpr)
+
+fpr, tpr, thresholds = roc_curve(y_test, Ridge)
+
+plot_roc_curve(fpr, tpr)
+
 #############################
 
 from sklearn.neural_network import MLPClassifier
@@ -286,18 +489,8 @@ y_test
 #############################
 #############################
 
-from sklearn.naive_bayes import MultinomialNB
-
-clf = MultinomialNB()
-clf.fit(X, y)
-print(clf.get_params())
-print('Naive Bayes for in-sample and out-of-sample cases:')
-print(accuracy_score(clf.predict(X_train),y_train))
-print(accuracy_score(clf.predict(X_test),y_test))
 
 
-#############################
-#############################
 
 
 import gensim
